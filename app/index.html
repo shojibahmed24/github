@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ShopBD - Mobile App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', 'Hind Siliguri', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- Main Content Area -->
+    <div id="app-root" class="flex-1 overflow-y-auto hide-scrollbar pb-20 relative">
+        <!-- Screens will be injected here -->
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-lg z-50">
+        <div class="flex justify-around items-center h-16">
+            <button onclick="router.navigate('home')" class="nav-btn active flex flex-col items-center justify-center w-full h-full text-[#0A84FF]">
+                <i class="fas fa-home text-lg mb-1"></i>
+                <span class="text-xs font-medium">Home</span>
+            </button>
+            <button onclick="router.navigate('categories')" class="nav-btn flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-[#0A84FF]">
+                <i class="fas fa-th-large text-lg mb-1"></i>
+                <span class="text-xs font-medium">Catg.</span>
+            </button>
+            <button onclick="router.navigate('cart')" class="nav-btn relative flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-[#0A84FF]">
+                <div class="relative">
+                    <i class="fas fa-shopping-cart text-lg mb-1"></i>
+                    <span id="cart-badge" class="absolute -top-2 -right-2 bg-[#FF6B00] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
+                </div>
+                <span class="text-xs font-medium">Cart</span>
+            </button>
+            <button onclick="router.navigate('profile')" class="nav-btn flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-[#0A84FF]">
+                <i class="fas fa-user text-lg mb-1"></i>
+                <span class="text-xs font-medium">Account</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Global Toast -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-4 py-2 rounded-full shadow-xl z-[60] transition-opacity duration-300 opacity-0 pointer-events-none flex items-center gap-2">
+        <i class="fas fa-check-circle text-green-400"></i>
+        <span id="toast-msg" class="text-sm font-medium">Notification</span>
+    </div>
+
+    <script>
+        // --- DATA LAYER ---
+        const DB_KEY = 'shop_db_v1';
+        const initialData = {
+            products: [
+                { id: 1, name: "Premium Panjabi", price: 2500, oldPrice: 3000, category: "Fashion", image: "https://images.unsplash.com/photo-1628131336829-5778f244585c?w=500&q=80", rating: 4.5, sold: 120 },
+                { id: 2, name: "Wireless Earbuds", price: 1200, oldPrice: 1800, category: "Electronics", image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500&q=80", rating: 4.8, sold: 500 },
+                { id: 3, name: "Smart Watch Pro", price: 4500, oldPrice: 5500, category: "Electronics", image: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500&q=80", rating: 4.2, sold: 85 },
+                { id: 4, name: "Designer Saree", price: 8500, oldPrice: 10000, category: "Fashion", image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=500&q=80", rating: 4.9, sold: 45 },
+                { id: 5, name: "Gaming Mouse", price: 950, oldPrice: 1200, category: "Accessories", image: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500&q=80", rating: 4.3, sold: 200 }
+            ],
+            cart: [],
+            orders: []
+        };
+
+        // Initialize DB
+        function getDB() {
+            const data = localStorage.getItem(DB_KEY);
+            if (!data) {
+                localStorage.setItem(DB_KEY, JSON.stringify(initialData));
+                return initialData;
+            }
+            return JSON.parse(data);
+        }
+
+        function saveDB(data) {
+            localStorage.setItem(DB_KEY, JSON.stringify(data));
+            updateCartBadge();
+        }
+
+        // --- APP STATE ---
+        const state = {
+            lang: 'en',
+            user: { name: "Rahim Ahmed", phone: "+8801700000000", avatar: "https://i.pravatar.cc/150?img=11" },
+            currentRoute: 'home'
+        };
+
+        const translations = {
+            en: { search: "Search products...", flash: "Flash Sale", new: "New Arrivals", addToCart: "Add to Cart", checkout: "Checkout", total: "Total" },
+            bn: { search: "পণ্য খুঁজুন...", flash: "ফ্ল্যাশ সেল", new: "নতুন পণ্য", addToCart: "কার্টে যোগ করুন", checkout: "অর্ডার করুন", total: "মোট" }
+        };
+
+        // --- ROUTER & COMPONENTS ---
+        const router = {
+            navigate: (route, params = null) => {
+                const root = document.getElementById('app-root');
+                state.currentRoute = route;
+                
+                // Update Active Nav
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    btn.classList.remove('text-[#0A84FF]');
+                    btn.classList.add('text-gray-400');
+                    if(btn.onclick.toString().includes(`'${route}'`) && route !== 'details') {
+                        btn.classList.add('text-[#0A84FF]');
+                        btn.classList.remove('text-gray-400');
+                    }
+                });
+
+                root.innerHTML = ''; // Clear
+                window.scrollTo(0,0);
+
+                if (route === 'home') renderHome(root);
+                else if (route === 'categories') renderCategories(root);
+                else if (route === 'cart') renderCart(root);
+                else if (route === 'profile') renderProfile(root);
+                else if (route === 'details') renderDetails(root, params);
+                else if (route === 'checkout') renderCheckout(root);
+            }
+        };
+
+        // --- RENDERERS ---
+        function renderHome(root) {
+            const db = getDB();
+            const t = translations[state.lang];
+            
+            const html = `
+                <!-- Header -->
+                <div class="sticky top-0 bg-white z-40 px-4 py-3 shadow-sm">
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-[#0A84FF] flex items-center justify-center text-white font-bold">
+                                <i class="fas fa-shopping-bag"></i>
+                            </div>
+                            <h1 class="text-xl font-bold tracking-tight text-[#0A84FF]">Shop<span class="text-[#FF6B00]">BD</span></h1>
+                        </div>
+                        <button onclick="toggleLang()" class="text-xs bg-gray-100 px-2 py-1 rounded font-bold">${state.lang.toUpperCase()}</button>
+                    </div>
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" placeholder="${t.search}" class="w-full bg-gray-100 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#0A84FF] transition-all">
+                    </div>
+                </div>
+
+                <!-- Banner Slider (Static for demo) -->
+                <div class="p-4">
+                    <div class="w-full h-40 bg-gradient-to-r from-[#0A84FF] to-[#00C6FF] rounded-2xl flex items-center px-6 text-white shadow-lg relative overflow-hidden">
+                        <div class="z-10">
+                            <span class="bg-white text-[#0A84FF] text-xs font-bold px-2 py-1 rounded mb-2 inline-block">New User Offer</span>
+                            <h2 class="text-2xl font-bold mb-1">Get 50% OFF</h2>
+                            <p class="text-sm opacity-90">On your first order today!</p>
+                        </div>
+                        <i class="fas fa-gift text-9xl absolute -right-4 -bottom-4 opacity-20"></i>
+                    </div>
+                </div>
+
+                <!-- Categories Grid -->
+                <div class="px-4 mb-6">
+                    <h3 class="font-bold text-gray-800 mb-3">Categories</h3>
+                    <div class="grid grid-cols-4 gap-4 text-center">
+                        ${['Fashion', 'Electronics', 'Home', 'Beauty'].map((cat, i) => `
+                            <div class="flex flex-col items-center gap-2 group" onclick="filterCat('${cat}')">
+                                <div class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center text-[#0A84FF] group-active:scale-95 transition-transform">
+                                    <i class="fas fa-${['tshirt', 'mobile-alt', 'couch', 'magic'][i]}"></i>
+                                </div>
+                                <span class="text-xs font-medium text-gray-600">${cat}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Featured Products -->
+                <div class="px-4 mb-20 fade-in">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-gray-800">${t.flash}</h3>
+                        <a href="#" class="text-xs text-[#0A84FF] font-medium">View All</a>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${db.products.map(p => ProductCard(p)).join('')}
+                    </div>
+                </div>
+            `;
+            root.innerHTML = html;
+        }
+
+        function ProductCard(p) {
+            return `
+            <div onclick="router.navigate('details', ${p.id})" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden active:scale-95 transition-transform duration-200">
+                <div class="relative h-36 bg-gray-100">
+                    <img src="${p.image}" class="w-full h-full object-cover" loading="lazy">
+                    ${p.oldPrice ? `<span class="absolute top-2 left-2 bg-[#FF6B00] text-white text-[10px] font-bold px-1.5 py-0.5 rounded">-${Math.round((1 - p.price/p.oldPrice)*100)}%</span>` : ''}
+                </div>
+                <div class="p-3">
+                    <h4 class="text-xs text-gray-500 mb-1">${p.category}</h4>
+                    <h3 class="font-bold text-sm text-gray-800 truncate mb-1">${p.name}</h3>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-[#0A84FF] font-bold">৳${p.price}</span>
+                        <span class="text-gray-400 text-xs line-through">৳${p.oldPrice}</span>
+                    </div>
+                    <div class="flex items-center text-[10px] text-yellow-400 gap-1">
+                        <i class="fas fa-star"></i>
+                        <span class="text-gray-500 font-medium">${p.rating} (${p.sold} sold)</span>
+                    </div>
+                </div>
+            </div>
+            `;
+        }
+
+        function renderDetails(root, id) {
+            const db = getDB();
+            const p = db.products.find(x => x.id === id);
+            if(!p) return router.navigate('home');
+
+            root.innerHTML = `
+                <div class="relative min-h-screen bg-white pb-24 fade-in">
+                    <div class="relative h-80 bg-gray-100">
+                         <img src="${p.image}" class="w-full h-full object-cover">
+                         <button onclick="window.history.back()" class="absolute top-4 left-4 w-10 h-10 bg-white/80 backdrop-blur rounded-full flex items-center justify-center shadow-sm">
+                            <i class="fas fa-arrow-left text-gray-700"></i>
+                         </button>
+                         <button class="absolute top-4 right-4 w-10 h-10 bg-white/80 backdrop-blur rounded-full flex items-center justify-center shadow-sm">
+                            <i class="far fa-heart text-red-500"></i>
+                         </button>
+                    </div>
+                    <div class="px-5 py-6 -mt-6 bg-white rounded-t-3xl relative z-10">
+                         <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h1 class="text-xl font-bold text-gray-900">${p.name}</h1>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="bg-blue-100 text-[#0A84FF] text-xs px-2 py-0.5 rounded font-medium">${p.category}</span>
+                                    <div class="flex text-yellow-400 text-xs">
+                                        <i class="fas fa-star"></i> <span class="text-gray-500 ml-1">${p.rating} Ratings</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <h2 class="text-2xl font-bold text-[#0A84FF]">৳${p.price}</h2>
+                         </div>
+                         
+                         <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                            Experience premium quality with this authentic product directly from our trusted suppliers. Perfect for your daily needs with guaranteed durability.
+                         </p>
+
+                         <h3 class="font-bold mb-3">Select Color</h3>
+                         <div class="flex gap-3 mb-6">
+                            <div class="w-8 h-8 rounded-full bg-black ring-2 ring-offset-2 ring-[#0A84FF]"></div>
+                            <div class="w-8 h-8 rounded-full bg-gray-400"></div>
+                            <div class="w-8 h-8 rounded-full bg-red-500"></div>
+                         </div>
+                    </div>
+
+                    <!-- Bottom Action -->
+                    <div class="fixed bottom-0 w-full bg-white p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex gap-4 z-50">
+                        <button onclick="addToCart(${p.id})" class="flex-1 bg-[#0A84FF] text-white py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 active:scale-95 transition-all">
+                            Add To Cart
+                        </button>
+                         <button class="flex-1 bg-[#FF6B00] text-white py-3 rounded-xl font-bold shadow-lg hover:bg-orange-600 active:scale-95 transition-all">
+                            Buy Now
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCart(root) {
+            const db = getDB();
+            const cartItems = db.cart;
+            
+            if(cartItems.length === 0) {
+                root.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-screen pb-20 fade-in">
+                        <div class="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <i class="fas fa-shopping-basket text-4xl text-gray-300"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800">Your cart is empty</h2>
+                        <p class="text-gray-500 text-sm mb-6">Looks like you haven't added anything yet.</p>
+                        <button onclick="router.navigate('home')" class="px-8 py-3 bg-[#0A84FF] text-white rounded-full font-bold shadow-lg">Start Shopping</button>
+                    </div>
+                `;
+                return;
+            }
+
+            let total = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
+
+            root.innerHTML = `
+                <div class="p-4 fade-in pb-32">
+                    <h1 class="text-2xl font-bold mb-6">My Cart <span class="text-sm font-normal text-gray-500">(${cartItems.length} items)</span></h1>
+                    <div class="space-y-4 mb-6">
+                        ${cartItems.map((item, index) => `
+                            <div class="flex gap-4 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+                                <img src="${item.image}" class="w-20 h-20 rounded-lg object-cover bg-gray-100">
+                                <div class="flex-1 flex flex-col justify-between">
+                                    <div class="flex justify-between">
+                                        <h3 class="font-bold text-gray-800 line-clamp-1">${item.name}</h3>
+                                        <button onclick="removeFromCart(${index})" class="text-gray-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                    <p class="text-xs text-gray-500">Color: Black</p>
+                                    <div class="flex justify-between items-center mt-2">
+                                        <h4 class="font-bold text-[#0A84FF]">৳${item.price}</h4>
+                                        <div class="flex items-center gap-3 bg-gray-100 rounded-lg px-2 py-1">
+                                            <button onclick="updateQty(${index}, -1)" class="text-gray-500">-</button>
+                                            <span class="text-sm font-bold">${item.qty}</span>
+                                            <button onclick="updateQty(${index}, 1)" class="text-gray-500">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <!-- Checkout Summary -->
+                    <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+                        <div class="flex justify-between mb-2 text-sm text-gray-600">
+                            <span>Subtotal</span>
+                            <span>৳${total}</span>
+                        </div>
+                         <div class="flex justify-between mb-2 text-sm text-gray-600">
+                            <span>Delivery</span>
+                            <span>৳60</span>
+                        </div>
+                        <div class="border-t pt-2 mt-2 flex justify-between font-bold text-lg">
+                            <span>Total</span>
+                            <span>৳${total + 60}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fixed bottom-16 w-full bg-white p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+                    <button onclick="router.navigate('checkout')" class="w-full bg-[#0A84FF] text-white py-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 active:scale-95 transition-all">
+                        Proceed to Checkout
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderProfile(root) {
+            root.innerHTML = `
+                <div class="p-4 fade-in">
+                    <div class="flex items-center gap-4 mb-8">
+                        <img src="${state.user.avatar}" class="w-16 h-16 rounded-full border-2 border-[#0A84FF]">
+                        <div>
+                            <h2 class="text-xl font-bold">${state.user.name}</h2>
+                            <p class="text-gray-500 text-sm">${state.user.phone}</p>
+                        </div>
+                        <button class="ml-auto text-[#0A84FF]"><i class="fas fa-edit"></i></button>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+                        <div class="flex justify-around text-center">
+                             <div class="flex flex-col gap-1">
+                                <i class="fas fa-box text-xl text-[#0A84FF]"></i>
+                                <span class="text-xs font-medium">To Pay</span>
+                             </div>
+                             <div class="flex flex-col gap-1">
+                                <i class="fas fa-shipping-fast text-xl text-[#FF6B00]"></i>
+                                <span class="text-xs font-medium">To Ship</span>
+                             </div>
+                             <div class="flex flex-col gap-1">
+                                <i class="fas fa-truck text-xl text-green-500"></i>
+                                <span class="text-xs font-medium">To Receive</span>
+                             </div>
+                             <div class="flex flex-col gap-1">
+                                <i class="fas fa-star text-xl text-yellow-400"></i>
+                                <span class="text-xs font-medium">Review</span>
+                             </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <button class="w-full bg-white p-4 rounded-xl flex justify-between items-center shadow-sm">
+                            <span class="font-medium"><i class="fas fa-map-marker-alt text-[#0A84FF] w-6"></i> Address Manager</span>
+                            <i class="fas fa-chevron-right text-gray-300"></i>
+                        </button>
+                         <button class="w-full bg-white p-4 rounded-xl flex justify-between items-center shadow-sm">
+                            <span class="font-medium"><i class="fas fa-heart text-red-500 w-6"></i> Wishlist</span>
+                            <i class="fas fa-chevron-right text-gray-300"></i>
+                        </button>
+                        <button class="w-full bg-white p-4 rounded-xl flex justify-between items-center shadow-sm">
+                            <span class="font-medium"><i class="fas fa-headset text-purple-500 w-6"></i> Support</span>
+                            <i class="fas fa-chevron-right text-gray-300"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCheckout(root) {
+            root.innerHTML = `
+                <div class="p-4 fade-in pb-24">
+                     <h2 class="text-xl font-bold mb-4">Checkout</h2>
+                     
+                     <div class="bg-white p-4 rounded-xl shadow-sm mb-4">
+                        <h3 class="font-bold mb-2 text-sm text-gray-500">Delivery Address</h3>
+                        <div class="flex gap-3 items-start">
+                            <i class="fas fa-map-marker-alt text-[#0A84FF] mt-1"></i>
+                            <div>
+                                <p class="font-bold">Home</p>
+                                <p class="text-sm text-gray-500">House 12, Road 5, Dhanmondi, Dhaka-1209</p>
+                                <p class="text-sm text-gray-500">+8801700000000</p>
+                            </div>
+                        </div>
+                     </div>
+
+                     <div class="bg-white p-4 rounded-xl shadow-sm mb-4">
+                        <h3 class="font-bold mb-3 text-sm text-gray-500">Payment Method</h3>
+                        <div class="space-y-3">
+                            <label class="flex items-center gap-3 border p-3 rounded-lg border-[#0A84FF] bg-blue-50">
+                                <input type="radio" name="payment" checked class="text-[#0A84FF]">
+                                <span class="flex-1 font-medium">Cash on Delivery</span>
+                                <i class="fas fa-money-bill-wave text-[#0A84FF]"></i>
+                            </label>
+                             <label class="flex items-center gap-3 border p-3 rounded-lg">
+                                <input type="radio" name="payment" class="text-[#0A84FF]">
+                                <span class="flex-1 font-medium">Bkash / Nagad</span>
+                                <i class="fas fa-wallet text-pink-500"></i>
+                            </label>
+                        </div>
+                     </div>
+                     
+                     <button onclick="processOrder()" class="w-full bg-[#0A84FF] text-white py-4 rounded-xl font-bold shadow-lg mt-4">Confirm Order</button>
+                </div>
+            `;
+        }
+
+        // --- LOGIC ---
+        function addToCart(id) {
+            const db = getDB();
+            const product = db.products.find(p => p.id === id);
+            if (product) {
+                const existing = db.cart.find(c => c.id === id);
+                if(existing) existing.qty++;
+                else db.cart.push({...product, qty: 1});
+                saveDB(db);
+                showToast('Added to Cart!');
+            }
+        }
+
+        function removeFromCart(index) {
+            const db = getDB();
+            db.cart.splice(index, 1);
+            saveDB(db);
+            renderCart(document.getElementById('app-root'));
+        }
+
+        function updateQty(index, change) {
+            const db = getDB();
+            const item = db.cart[index];
+            if(item.qty + change > 0) {
+                item.qty += change;
+                saveDB(db);
+                renderCart(document.getElementById('app-root'));
+            }
+        }
+
+        function processOrder() {
+            const db = getDB();
+            // Move cart to orders
+            const order = { id: Date.now(), items: db.cart, date: new Date().toISOString(), status: 'Pending', total: 0 };
+            db.orders.push(order);
+            db.cart = [];
+            saveDB(db);
+            showToast('Order Placed Successfully!');
+            setTimeout(() => router.navigate('home'), 1500);
+        }
+
+        function updateCartBadge() {
+            const db = getDB();
+            const count = db.cart.reduce((a, b) => a + b.qty, 0);
+            const badge = document.getElementById('cart-badge');
+            if(count > 0) {
+                badge.innerText = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            t.classList.remove('opacity-0', 'pointer-events-none');
+            t.classList.add('translate-y-4');
+            setTimeout(() => {
+                t.classList.add('opacity-0', 'pointer-events-none');
+                t.classList.remove('translate-y-4');
+            }, 2000);
+        }
+
+        function toggleLang() {
+            state.lang = state.lang === 'en' ? 'bn' : 'en';
+            router.navigate(state.currentRoute);
+        }
+
+        // --- INIT ---
+        window.onload = () => {
+            getDB(); // ensure init
+            updateCartBadge();
+            router.navigate('home');
+        };
+    </script>
+</body>
+</html>
