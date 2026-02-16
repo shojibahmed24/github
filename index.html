@@ -67,12 +67,12 @@
         <div class="flex justify-between w-full max-w-xs bg-gray-900/80 border border-cyan-500/30 p-3 rounded-lg shadow-[0_0_15px_rgba(6,182,212,0.15)]">
             <div class="flex flex-col items-center">
                 <span class="text-xs text-cyan-300">PLAYER</span>
-                <span id="score-p1" class="text-2xl font-bold text-white transition-all duration-300">0</span>
+                <span id="score-p1" class="text-2xl font-bold text-white">0</span>
             </div>
             <div class="h-full w-px bg-gray-700"></div>
             <div class="flex flex-col items-center">
                 <span class="text-xs text-fuchsia-300">CPU</span>
-                <span id="score-cpu" class="text-2xl font-bold text-white transition-all duration-300">0</span>
+                <span id="score-cpu" class="text-2xl font-bold text-white">0</span>
             </div>
         </div>
     </header>
@@ -104,13 +104,9 @@
             Restart System
         </button>
         
-        <div class="flex justify-between px-2">
+        <div class="flex justify-center gap-4">
             <button onclick="toggleSound()" id="sound-btn" class="text-xs text-gray-500 uppercase hover:text-cyan-400 transition-colors flex items-center gap-2">
                 <span id="sound-icon">🔊</span> SOUND: ON
-            </button>
-            
-            <button onclick="resetScores()" class="text-xs text-gray-600 uppercase hover:text-red-400 transition-colors flex items-center gap-2">
-                <span>🗑️</span> RESET DATA
             </button>
         </div>
     </footer>
@@ -128,7 +124,7 @@
         // --- State ---
         let board = ['', '', '', '', '', '', '', '', ''];
         let gameActive = true;
-        let isPlayerTurn = true;
+        let isPlayerTurn = true; // Player is always X and goes first for simplicity in V1
         let scores = { p1: 0, cpu: 0 };
         let soundEnabled = true;
         let audioCtx = null;
@@ -144,13 +140,6 @@
 
         // --- Initialization ---
         function init() {
-            // Load Scores from LocalStorage
-            const savedScores = localStorage.getItem('cyberToeScores');
-            if (savedScores) {
-                scores = JSON.parse(savedScores);
-            }
-            updateScoreDisplay();
-
             const boardEl = document.getElementById('game-board');
             boardEl.innerHTML = '';
             board.forEach((cell, index) => {
@@ -169,25 +158,7 @@
             updateStatus("YOUR TURN");
         }
 
-        function updateScoreDisplay() {
-            document.getElementById('score-p1').innerText = scores.p1;
-            document.getElementById('score-cpu').innerText = scores.cpu;
-        }
-
-        function saveScores() {
-            localStorage.setItem('cyberToeScores', JSON.stringify(scores));
-        }
-
-        function resetScores() {
-            if(confirm("Purge all score data?")) {
-                scores = { p1: 0, cpu: 0 };
-                saveScores();
-                updateScoreDisplay();
-                playSound('lose'); // Mechanical feedback
-            }
-        }
-
-        // --- Audio System ---
+        // --- Audio System (Synthesized) ---
         function initAudio() {
             if (!audioCtx) {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -210,6 +181,7 @@
             const now = audioCtx.currentTime;
             
             if (type === 'moveX') {
+                // High tech blip
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(800, now);
                 osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
@@ -218,6 +190,7 @@
                 osc.start(now);
                 osc.stop(now + 0.1);
             } else if (type === 'moveO') {
+                // Lower mechanical sound
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(200, now);
                 osc.frequency.linearRampToValueAtTime(100, now + 0.15);
@@ -226,6 +199,7 @@
                 osc.start(now);
                 osc.stop(now + 0.15);
             } else if (type === 'win') {
+                // Victory chord
                 [440, 554, 659].forEach((freq, i) => {
                     const o = audioCtx.createOscillator();
                     const g = audioCtx.createGain();
@@ -239,6 +213,7 @@
                     o.stop(now + i*0.1 + 0.6);
                 });
             } else if (type === 'lose') {
+                // Error buzz
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(150, now);
                 osc.frequency.linearRampToValueAtTime(100, now + 0.3);
@@ -252,6 +227,7 @@
         function toggleSound() {
             soundEnabled = !soundEnabled;
             const btn = document.getElementById('sound-btn');
+            const icon = document.getElementById('sound-icon');
             if (soundEnabled) {
                 btn.innerHTML = '<span id="sound-icon">🔊</span> SOUND: ON';
                 btn.classList.add('text-cyan-400');
@@ -259,12 +235,11 @@
                 btn.innerHTML = '<span id="sound-icon">🔇</span> SOUND: OFF';
                 btn.classList.remove('text-cyan-400');
             }
-            initAudio();
+            initAudio(); // Ensure context is ready on user interaction
         }
 
         // --- Game Logic ---
         function handleCellClick(index) {
-            initAudio(); // Ensure audio context is ready on first click
             if (board[index] !== '' || !gameActive || !isPlayerTurn) return;
             
             makeMove(index, PLAYER);
@@ -272,6 +247,7 @@
             if (gameActive) {
                 isPlayerTurn = false;
                 updateStatus("CPU THINKING...");
+                // Slight artificial delay for realism
                 setTimeout(cpuMove, 600);
             }
         }
@@ -281,6 +257,7 @@
             const cells = document.querySelectorAll('.cell div');
             const cell = cells[index];
             
+            // Visual update
             cell.innerText = player;
             if (player === PLAYER) {
                 cell.classList.add('text-cyan-400', 'neon-text-blue');
@@ -290,6 +267,7 @@
                 playSound('moveO');
             }
 
+            // Haptic
             if (window.NativeBridge && window.NativeBridge.vibrate) {
                 window.NativeBridge.vibrate(50);
             } else if (navigator.vibrate) {
@@ -303,13 +281,17 @@
             if (!gameActive) return;
 
             let move = -1;
-            // 1. Attack
+
+            // 1. Can CPU win? (Attack)
             move = findBestMove(CPU);
-            // 2. Defense
+            
+            // 2. Must CPU block Player? (Defense)
             if (move === -1) move = findBestMove(PLAYER);
-            // 3. Center
+            
+            // 3. Take Center if available
             if (move === -1 && board[4] === '') move = 4;
-            // 4. Random
+            
+            // 4. Random available
             if (move === -1) {
                 const available = board.map((v, i) => v === '' ? i : null).filter(v => v !== null);
                 move = available[Math.floor(Math.random() * available.length)];
@@ -325,6 +307,7 @@
         }
 
         function findBestMove(targetPlayer) {
+            // Look for a line with 2 of targetPlayer and 1 empty
             for (let condition of WIN_CONDITIONS) {
                 const [a, b, c] = condition;
                 const vals = [board[a], board[b], board[c]];
@@ -369,11 +352,13 @@
 
             if (winner === PLAYER) {
                 scores.p1++;
+                document.getElementById('score-p1').innerText = scores.p1;
                 highlightWin(line, 'cyan');
                 setTimeout(() => showModal("VICTORY", "text-cyan-400"), 800);
                 playSound('win');
             } else if (winner === CPU) {
                 scores.cpu++;
+                document.getElementById('score-cpu').innerText = scores.cpu;
                 highlightWin(line, 'fuchsia');
                 setTimeout(() => showModal("DEFEAT", "text-fuchsia-500"), 800);
                 playSound('lose');
@@ -381,9 +366,6 @@
                 setTimeout(() => showModal("DRAW", "text-white"), 500);
                 playSound('lose');
             }
-            
-            saveScores();
-            updateScoreDisplay();
         }
 
         function highlightWin(line, color) {
