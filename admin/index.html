@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopBD - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F3F4F6; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-[#0A84FF] text-white flex flex-col">
+        <div class="p-6 flex items-center gap-3">
+            <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-[#0A84FF] font-bold text-xl">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <span class="text-2xl font-bold tracking-tight">Admin</span>
+        </div>
+        
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+            <a href="#" onclick="renderDashboard()" class="nav-item active flex items-center gap-3 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all">
+                <i class="fas fa-chart-line w-6"></i> Dashboard
+            </a>
+            <a href="#" onclick="renderProducts()" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/20 transition-all">
+                <i class="fas fa-box w-6"></i> Products
+            </a>
+            <a href="#" onclick="renderOrders()" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/20 transition-all">
+                <i class="fas fa-shopping-cart w-6"></i> Orders
+            </a>
+            <a href="#" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/20 transition-all">
+                <i class="fas fa-users w-6"></i> Users
+            </a>
+        </nav>
+
+        <div class="p-4">
+            <button class="w-full bg-[#FF6B00] hover:bg-orange-600 text-white py-2 rounded-lg font-bold transition-colors">Logout</button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <!-- Top Header -->
+        <header class="bg-white h-16 shadow-sm flex justify-between items-center px-8 z-10">
+            <h2 id="page-title" class="text-xl font-bold text-gray-800">Dashboard</h2>
+            <div class="flex items-center gap-4">
+                <button class="relative p-2 text-gray-400 hover:text-[#0A84FF]">
+                    <i class="fas fa-bell"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+                <div class="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
+                    <img src="https://i.pravatar.cc/150?img=3" alt="Admin">
+                </div>
+            </div>
+        </header>
+
+        <!-- Scrollable Content -->
+        <div id="main-content" class="flex-1 overflow-auto p-8">
+            <!-- Dynamic Content Injected Here -->
+        </div>
+    </main>
+
+    <script>
+        const DB_KEY = 'shop_db_v1';
+
+        function getDB() {
+            const data = localStorage.getItem(DB_KEY);
+            // Init defaults if missing (same as app)
+            if (!data) return { products: [], orders: [] };
+            return JSON.parse(data);
+        }
+
+        function saveDB(data) {
+            localStorage.setItem(DB_KEY, JSON.stringify(data));
+            renderProducts(); // Refresh if on products page
+        }
+
+        function renderDashboard() {
+            const db = getDB();
+            document.getElementById('page-title').innerText = 'Dashboard Overview';
+            const content = document.getElementById('main-content');
+            
+            const totalRevenue = db.orders ? db.orders.length * 1200 : 0; // Mock calculation
+
+            content.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-gray-500 text-sm font-medium">Total Sales</p>
+                                <h3 class="text-2xl font-bold text-gray-800">৳${totalRevenue}</h3>
+                            </div>
+                            <div class="p-2 bg-blue-50 text-[#0A84FF] rounded-lg"><i class="fas fa-wallet"></i></div>
+                        </div>
+                        <span class="text-green-500 text-xs font-bold">+12.5%</span> <span class="text-gray-400 text-xs">from last month</span>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-gray-500 text-sm font-medium">Total Orders</p>
+                                <h3 class="text-2xl font-bold text-gray-800">${db.orders ? db.orders.length : 0}</h3>
+                            </div>
+                            <div class="p-2 bg-purple-50 text-purple-500 rounded-lg"><i class="fas fa-shopping-bag"></i></div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                         <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-gray-500 text-sm font-medium">Products</p>
+                                <h3 class="text-2xl font-bold text-gray-800">${db.products.length}</h3>
+                            </div>
+                            <div class="p-2 bg-orange-50 text-orange-500 rounded-lg"><i class="fas fa-box"></i></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderProducts() {
+            const db = getDB();
+            document.getElementById('page-title').innerText = 'Product Management';
+            const content = document.getElementById('main-content');
+
+            content.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                        <h3 class="font-bold text-gray-800">All Products</h3>
+                        <button onclick="openAddModal()" class="bg-[#0A84FF] hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                            + Add Product
+                        </button>
+                    </div>
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="px-6 py-4">Product Name</th>
+                                <th class="px-6 py-4">Price</th>
+                                <th class="px-6 py-4">Category</th>
+                                <th class="px-6 py-4">Stock</th>
+                                <th class="px-6 py-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            ${db.products.map(p => `
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <img src="${p.image}" class="w-10 h-10 rounded-lg object-cover bg-gray-100">
+                                            <span class="font-medium text-gray-800">${p.name}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 font-bold text-[#0A84FF]">৳${p.price}</td>
+                                    <td class="px-6 py-4"><span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">${p.category}</span></td>
+                                    <td class="px-6 py-4 text-green-600 font-medium">In Stock</td>
+                                    <td class="px-6 py-4">
+                                        <button onclick="deleteProduct(${p.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function openAddModal() {
+            const name = prompt("Product Name:");
+            const price = prompt("Price (BDT):");
+            const cat = prompt("Category (Fashion, Electronics, Home):");
+            if(name && price) {
+                const db = getDB();
+                db.products.push({
+                    id: Date.now(),
+                    name: name,
+                    price: parseInt(price),
+                    oldPrice: parseInt(price) + 200,
+                    category: cat || 'General',
+                    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80',
+                    rating: 5.0,
+                    sold: 0
+                });
+                saveDB(db);
+                alert("Product Added! Check the App to see it live.");
+            }
+        }
+
+        function deleteProduct(id) {
+            if(confirm("Are you sure?")) {
+                const db = getDB();
+                db.products = db.products.filter(p => p.id !== id);
+                saveDB(db);
+            }
+        }
+
+        function renderOrders() {
+            const db = getDB();
+            document.getElementById('page-title').innerText = 'Order Management';
+            const content = document.getElementById('main-content');
+            
+            if(!db.orders || db.orders.length === 0) {
+                 content.innerHTML = `<div class="p-10 text-center text-gray-500">No orders found. Place an order from the app first.</div>`;
+                 return;
+            }
+
+            content.innerHTML = `
+                <div class="space-y-4">
+                    ${db.orders.map(o => `
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h4 class="font-bold text-gray-800">Order #${o.id}</h4>
+                                    <p class="text-sm text-gray-500">${new Date(o.date).toLocaleString()}</p>
+                                </div>
+                                <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold">${o.status}</span>
+                            </div>
+                            <div class="border-t border-b border-gray-100 py-3 my-3 space-y-2">
+                                ${o.items.map(i => `
+                                    <div class="flex justify-between text-sm">
+                                        <span>${i.qty}x ${i.name}</span>
+                                        <span class="font-medium">৳${i.price * i.qty}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="flex justify-end gap-3">
+                                <button class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">Details</button>
+                                <button class="px-4 py-2 bg-[#0A84FF] text-white rounded-lg text-sm font-bold hover:bg-blue-600">Ship Order</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Init
+        renderDashboard();
+    </script>
+</body>
+</html>
