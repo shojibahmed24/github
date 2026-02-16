@@ -1,6 +1,6 @@
 {
-  "appId": "com.oneclick.studio",
-  "appName": "OneClickApp",
+  "appId": "com.shopping",
+  "appName": "SHOPPING",
   "webDir": "www",
   "bundledWebRuntime": false
 }
