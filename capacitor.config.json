@@ -1,6 +1,6 @@
 {
-  "appId": "com.tictactoe",
-  "appName": "Tic-tac-toe",
+  "appId": "com.oneclick.studio",
+  "appName": "OneClickApp",
   "webDir": "www",
   "bundledWebRuntime": false
 }
