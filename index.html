@@ -17,24 +17,20 @@
         }
 
         /* Neon Glow Effects */
-        .neon-text-blue {
-            text-shadow: 0 0 5px #06b6d4, 0 0 10px #06b6d4;
+        .neon-text-red {
+            text-shadow: 0 0 5px #ef4444, 0 0 10px #ef4444;
         }
-        .neon-text-pink {
-            text-shadow: 0 0 5px #d946ef, 0 0 10px #d946ef;
+        .neon-text-green {
+            text-shadow: 0 0 5px #4ade80, 0 0 10px #4ade80;
         }
         
-        .neon-border {
-            box-shadow: 0 0 5px #06b6d4, inset 0 0 5px #06b6d4;
-        }
-
         .cell {
             transition: all 0.2s ease;
             background: rgba(20, 20, 30, 0.6);
             backdrop-filter: blur(4px);
         }
         .cell:active {
-            background: rgba(6, 182, 212, 0.2);
+            background: rgba(239, 68, 68, 0.2);
         }
 
         /* Winning Line Animation */
@@ -45,13 +41,13 @@
         }
         
         .cyber-btn {
-            background: linear-gradient(45deg, transparent 5%, #06b6d4 5%);
+            background: linear-gradient(45deg, transparent 5%, #ef4444 5%);
             color: #000;
-            box-shadow: 6px 0px 0px 0px #0e7490;
+            box-shadow: 6px 0px 0px 0px #991b1b;
             transition: all 0.1s;
         }
         .cyber-btn:active {
-            box-shadow: 2px 0px 0px 0px #0e7490;
+            box-shadow: 2px 0px 0px 0px #991b1b;
             transform: translateX(4px);
         }
     </style>
@@ -60,18 +56,18 @@
 
     <!-- Header / Scoreboard -->
     <header class="w-full p-4 flex flex-col items-center gap-4">
-        <h1 class="text-2xl font-bold tracking-widest text-cyan-400 neon-text-blue uppercase">
-            Cyber<span class="text-fuchsia-500 neon-text-pink">Toe</span>
+        <h1 class="text-2xl font-bold tracking-widest text-red-500 neon-text-red uppercase">
+            Cyber<span class="text-green-400 neon-text-green">Toe</span>
         </h1>
         
-        <div class="flex justify-between w-full max-w-xs bg-gray-900/80 border border-cyan-500/30 p-3 rounded-lg shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+        <div class="flex justify-between w-full max-w-xs bg-gray-900/80 border border-red-500/30 p-3 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.15)]">
             <div class="flex flex-col items-center">
-                <span class="text-xs text-cyan-300">PLAYER</span>
+                <span class="text-xs text-red-400">PLAYER (X)</span>
                 <span id="score-p1" class="text-2xl font-bold text-white transition-all duration-300">0</span>
             </div>
             <div class="h-full w-px bg-gray-700"></div>
             <div class="flex flex-col items-center">
-                <span class="text-xs text-fuchsia-300">CPU</span>
+                <span class="text-xs text-green-400">CPU (O)</span>
                 <span id="score-cpu" class="text-2xl font-bold text-white transition-all duration-300">0</span>
             </div>
         </div>
@@ -86,15 +82,15 @@
         
         <!-- Decorative Background Elements -->
         <div class="absolute inset-0 z-0 pointer-events-none opacity-20">
-            <div class="absolute top-1/4 left-0 w-full h-px bg-cyan-500 blur-[1px]"></div>
-            <div class="absolute bottom-1/4 left-0 w-full h-px bg-fuchsia-500 blur-[1px]"></div>
-            <div class="absolute left-1/4 top-0 w-px h-full bg-cyan-500 blur-[1px]"></div>
-            <div class="absolute right-1/4 top-0 w-px h-full bg-fuchsia-500 blur-[1px]"></div>
+            <div class="absolute top-1/4 left-0 w-full h-px bg-red-500 blur-[1px]"></div>
+            <div class="absolute bottom-1/4 left-0 w-full h-px bg-green-500 blur-[1px]"></div>
+            <div class="absolute left-1/4 top-0 w-px h-full bg-red-500 blur-[1px]"></div>
+            <div class="absolute right-1/4 top-0 w-px h-full bg-green-500 blur-[1px]"></div>
         </div>
     </main>
 
     <!-- Status Indicator -->
-    <div id="status-text" class="text-center h-8 text-sm tracking-widest text-cyan-200 animate-pulse">
+    <div id="status-text" class="text-center h-8 text-sm tracking-widest text-red-200 animate-pulse">
         YOUR TURN
     </div>
 
@@ -105,11 +101,11 @@
         </button>
         
         <div class="flex justify-between px-2">
-            <button onclick="toggleSound()" id="sound-btn" class="text-xs text-gray-500 uppercase hover:text-cyan-400 transition-colors flex items-center gap-2">
+            <button onclick="toggleSound()" id="sound-btn" class="text-xs text-gray-500 uppercase hover:text-red-400 transition-colors flex items-center gap-2">
                 <span id="sound-icon">🔊</span> SOUND: ON
             </button>
             
-            <button onclick="resetScores()" class="text-xs text-gray-600 uppercase hover:text-red-400 transition-colors flex items-center gap-2">
+            <button onclick="resetScores()" class="text-xs text-gray-600 uppercase hover:text-white transition-colors flex items-center gap-2">
                 <span>🗑️</span> RESET DATA
             </button>
         </div>
@@ -117,9 +113,9 @@
 
     <!-- Result Overlay -->
     <div id="result-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex-col items-center justify-center backdrop-blur-sm">
-        <h2 id="winner-text" class="text-4xl font-bold mb-2 neon-text-blue">VICTORY</h2>
+        <h2 id="winner-text" class="text-4xl font-bold mb-2 neon-text-red">VICTORY</h2>
         <p class="text-gray-400 mb-8 tracking-widest text-sm">SYSTEM OVERRIDE COMPLETE</p>
-        <button onclick="closeModal()" class="px-8 py-3 border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 rounded uppercase tracking-widest transition-all shadow-[0_0_10px_#06b6d4]">
+        <button onclick="closeModal()" class="px-8 py-3 border border-red-500 text-red-400 hover:bg-red-500/10 rounded uppercase tracking-widest transition-all shadow-[0_0_10px_#ef4444]">
             Play Again
         </button>
     </div>
@@ -254,10 +250,10 @@
             const btn = document.getElementById('sound-btn');
             if (soundEnabled) {
                 btn.innerHTML = '<span id="sound-icon">🔊</span> SOUND: ON';
-                btn.classList.add('text-cyan-400');
+                btn.classList.add('text-red-400');
             } else {
                 btn.innerHTML = '<span id="sound-icon">🔇</span> SOUND: OFF';
-                btn.classList.remove('text-cyan-400');
+                btn.classList.remove('text-red-400');
             }
             initAudio();
         }
@@ -283,10 +279,10 @@
             
             cell.innerText = player;
             if (player === PLAYER) {
-                cell.classList.add('text-cyan-400', 'neon-text-blue');
+                cell.classList.add('text-red-500', 'neon-text-red');
                 playSound('moveX');
             } else {
-                cell.classList.add('text-fuchsia-500', 'neon-text-pink');
+                cell.classList.add('text-green-400', 'neon-text-green');
                 playSound('moveO');
             }
 
@@ -369,13 +365,13 @@
 
             if (winner === PLAYER) {
                 scores.p1++;
-                highlightWin(line, 'cyan');
-                setTimeout(() => showModal("VICTORY", "text-cyan-400"), 800);
+                highlightWin(line, 'red');
+                setTimeout(() => showModal("VICTORY", "text-red-500"), 800);
                 playSound('win');
             } else if (winner === CPU) {
                 scores.cpu++;
-                highlightWin(line, 'fuchsia');
-                setTimeout(() => showModal("DEFEAT", "text-fuchsia-500"), 800);
+                highlightWin(line, 'green');
+                setTimeout(() => showModal("DEFEAT", "text-green-400"), 800);
                 playSound('lose');
             } else {
                 setTimeout(() => showModal("DRAW", "text-white"), 500);
@@ -389,8 +385,8 @@
         function highlightWin(line, color) {
             const cells = document.querySelectorAll('.cell');
             line.forEach(index => {
-                cells[index].classList.add(color === 'cyan' ? 'shadow-[0_0_20px_#06b6d4]' : 'shadow-[0_0_20px_#d946ef]');
-                cells[index].style.borderColor = color === 'cyan' ? '#06b6d4' : '#d946ef';
+                cells[index].classList.add(color === 'red' ? 'shadow-[0_0_20px_#ef4444]' : 'shadow-[0_0_20px_#4ade80]');
+                cells[index].style.borderColor = color === 'red' ? '#ef4444' : '#4ade80';
             });
         }
 
@@ -402,7 +398,7 @@
             const modal = document.getElementById('result-modal');
             const text = document.getElementById('winner-text');
             text.innerText = title;
-            text.className = `text-4xl font-bold mb-2 ${colorClass} neon-text-blue`;
+            text.className = `text-4xl font-bold mb-2 ${colorClass} neon-text-${colorClass.includes('red') ? 'red' : 'green'}`;
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
