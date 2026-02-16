@@ -2,424 +2,470 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neon Tic-Tac-Toe</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Modern Quiz App</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
-
         body {
-            font-family: 'Orbitron', sans-serif;
-            background-color: #050505;
-            color: #e0e0e0;
-            overflow: hidden;
-            touch-action: none;
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Neon Glow Effects */
-        .neon-text-red {
-            text-shadow: 0 0 5px #ef4444, 0 0 10px #ef4444;
-        }
-        .neon-text-green {
-            text-shadow: 0 0 5px #4ade80, 0 0 10px #4ade80;
-        }
-        
-        .cell {
-            transition: all 0.2s ease;
-            background: rgba(20, 20, 30, 0.6);
-            backdrop-filter: blur(4px);
-        }
-        .cell:active {
-            background: rgba(239, 68, 68, 0.2);
+        /* Glassmorphism Utilities */
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* Winning Line Animation */
-        @keyframes scanline {
-            0% { transform: translateY(-100%); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: translateY(100%); opacity: 0; }
+        /* Custom Animations */
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
         }
         
-        .cyber-btn {
-            background: linear-gradient(45deg, transparent 5%, #ef4444 5%);
-            color: #000;
-            box-shadow: 6px 0px 0px 0px #991b1b;
-            transition: all 0.1s;
+        .slide-up {
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        .cyber-btn:active {
-            box-shadow: 2px 0px 0px 0px #991b1b;
-            transform: translateX(4px);
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Progress Bar Transition */
+        .progress-fill {
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        /* Timer Animation */
+        .timer-warning {
+            animation: pulse-red 1s infinite;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { color: #f8fafc; }
+            50% { color: #ef4444; }
+        }
+
+        /* Option Button States */
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .option-btn:active {
+            transform: scale(0.98);
         }
     </style>
 </head>
-<body class="h-[100dvh] w-full flex flex-col justify-between pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+<body class="min-h-[100dvh] flex flex-col items-center justify-center p-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
 
-    <!-- Header / Scoreboard -->
-    <header class="w-full p-4 flex flex-col items-center gap-4">
-        <h1 class="text-2xl font-bold tracking-widest text-red-500 neon-text-red uppercase">
-            Cyber<span class="text-green-400 neon-text-green">Toe</span>
-        </h1>
-        
-        <div class="flex justify-between w-full max-w-xs bg-gray-900/80 border border-red-500/30 p-3 rounded-lg shadow-[0_0_15px_rgba(239,68,68,0.15)]">
-            <div class="flex flex-col items-center">
-                <span class="text-xs text-red-400">PLAYER (X)</span>
-                <span id="score-p1" class="text-2xl font-bold text-white transition-all duration-300">0</span>
-            </div>
-            <div class="h-full w-px bg-gray-700"></div>
-            <div class="flex flex-col items-center">
-                <span class="text-xs text-green-400">CPU (O)</span>
-                <span id="score-cpu" class="text-2xl font-bold text-white transition-all duration-300">0</span>
-            </div>
-        </div>
-    </header>
+    <!-- Background Elements -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10">
+        <div class="absolute top-[-10%] right-[-5%] w-72 h-72 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div class="absolute bottom-[-10%] left-[-5%] w-72 h-72 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+    </div>
 
-    <!-- Game Board -->
-    <main class="flex-1 flex items-center justify-center p-4 relative">
-        <!-- Grid Container -->
-        <div id="game-board" class="grid grid-cols-3 gap-3 w-full max-w-[340px] aspect-square relative z-10">
-            <!-- Cells generated by JS -->
-        </div>
+    <!-- Main Container -->
+    <main id="app-container" class="w-full max-w-md glass rounded-3xl shadow-2xl overflow-hidden relative min-h-[500px] flex flex-col">
         
-        <!-- Decorative Background Elements -->
-        <div class="absolute inset-0 z-0 pointer-events-none opacity-20">
-            <div class="absolute top-1/4 left-0 w-full h-px bg-red-500 blur-[1px]"></div>
-            <div class="absolute bottom-1/4 left-0 w-full h-px bg-green-500 blur-[1px]"></div>
-            <div class="absolute left-1/4 top-0 w-px h-full bg-red-500 blur-[1px]"></div>
-            <div class="absolute right-1/4 top-0 w-px h-full bg-green-500 blur-[1px]"></div>
+        <!-- SCREEN: START -->
+        <div id="start-screen" class="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6 slide-up">
+            <div class="w-20 h-20 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg mb-2">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+            </div>
+            <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">Quiz Master</h1>
+            <p class="text-gray-400 text-sm">Test your knowledge with 10 random questions. 10 seconds per question.</p>
+            
+            <div class="bg-slate-800/50 p-4 rounded-xl w-full border border-slate-700/50">
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">High Score</p>
+                <p id="home-high-score" class="text-2xl font-bold text-white">0</p>
+            </div>
+
+            <button onclick="startQuiz()" class="w-full py-4 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2">
+                Start Quiz
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+            </button>
         </div>
+
+        <!-- SCREEN: QUIZ -->
+        <div id="quiz-screen" class="hidden flex-1 flex-col p-6">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex flex-col">
+                    <span class="text-xs text-slate-400">Question</span>
+                    <span id="question-counter" class="text-lg font-bold text-white">1<span class="text-slate-500 text-sm font-normal">/10</span></span>
+                </div>
+                <div class="flex items-center gap-2 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span id="timer" class="font-mono font-bold text-blue-400">10</span>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full h-1.5 bg-slate-800 rounded-full mb-8 overflow-hidden">
+                <div id="progress-bar" class="h-full bg-blue-500 progress-fill w-0"></div>
+            </div>
+
+            <!-- Question -->
+            <div class="flex-1 flex flex-col justify-center mb-8">
+                <h2 id="question-text" class="text-xl md:text-2xl font-semibold leading-relaxed text-white fade-in">
+                    Loading question...
+                </h2>
+            </div>
+
+            <!-- Options -->
+            <div id="options-container" class="grid grid-cols-1 gap-3 mb-6">
+                <!-- Options injected via JS -->
+            </div>
+
+            <!-- Next Button -->
+            <button id="next-btn" onclick="nextQuestion()" class="w-full py-3.5 bg-slate-700 text-slate-400 font-semibold rounded-xl cursor-not-allowed opacity-0 pointer-events-none transition-all duration-300" disabled>
+                Next Question
+            </button>
+        </div>
+
+        <!-- SCREEN: RESULT -->
+        <div id="result-screen" class="hidden flex-1 flex-col items-center justify-center p-8 text-center space-y-6">
+            <div class="relative">
+                <div class="w-24 h-24 rounded-full border-4 border-slate-700 flex items-center justify-center bg-slate-800">
+                    <span id="final-score" class="text-3xl font-bold text-white">0</span>
+                </div>
+                <div class="absolute -bottom-2 -right-2 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-md shadow-lg">
+                    / <span id="total-questions-res">10</span>
+                </div>
+            </div>
+
+            <h2 id="result-title" class="text-3xl font-bold text-white">Completed!</h2>
+            <p id="result-msg" class="text-slate-400">Great effort!</p>
+
+            <div class="grid grid-cols-2 gap-4 w-full">
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+                    <p class="text-xs text-slate-400">Accuracy</p>
+                    <p id="accuracy-text" class="text-lg font-bold text-blue-400">0%</p>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+                    <p class="text-xs text-slate-400">Best Score</p>
+                    <p id="high-score-res" class="text-lg font-bold text-purple-400">0</p>
+                </div>
+            </div>
+
+            <button onclick="restartQuiz()" class="w-full py-4 bg-white text-slate-900 hover:bg-slate-200 active:scale-95 font-bold rounded-xl shadow-lg transition-all">
+                Play Again
+            </button>
+        </div>
+
     </main>
 
-    <!-- Status Indicator -->
-    <div id="status-text" class="text-center h-8 text-sm tracking-widest text-red-200 animate-pulse">
-        YOUR TURN
-    </div>
-
-    <!-- Footer / Controls -->
-    <footer class="w-full p-6 flex flex-col gap-4 mb-4">
-        <button onclick="resetGame()" class="cyber-btn w-full py-4 text-lg font-bold uppercase tracking-wider">
-            Restart System
-        </button>
-        
-        <div class="flex justify-between px-2">
-            <button onclick="toggleSound()" id="sound-btn" class="text-xs text-gray-500 uppercase hover:text-red-400 transition-colors flex items-center gap-2">
-                <span id="sound-icon">🔊</span> SOUND: ON
-            </button>
-            
-            <button onclick="resetScores()" class="text-xs text-gray-600 uppercase hover:text-white transition-colors flex items-center gap-2">
-                <span>🗑️</span> RESET DATA
-            </button>
-        </div>
+    <footer class="mt-8 text-slate-500 text-xs text-center">
+        OneClick Studio • Modern Web Apps
     </footer>
 
-    <!-- Result Overlay -->
-    <div id="result-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex-col items-center justify-center backdrop-blur-sm">
-        <h2 id="winner-text" class="text-4xl font-bold mb-2 neon-text-red">VICTORY</h2>
-        <p class="text-gray-400 mb-8 tracking-widest text-sm">SYSTEM OVERRIDE COMPLETE</p>
-        <button onclick="closeModal()" class="px-8 py-3 border border-red-500 text-red-400 hover:bg-red-500/10 rounded uppercase tracking-widest transition-all shadow-[0_0_10px_#ef4444]">
-            Play Again
-        </button>
-    </div>
-
     <script>
-        // --- State ---
-        let board = ['', '', '', '', '', '', '', '', ''];
-        let gameActive = true;
-        let isPlayerTurn = true;
-        let scores = { p1: 0, cpu: 0 };
-        let soundEnabled = true;
-        let audioCtx = null;
-
-        // --- Constants ---
-        const PLAYER = 'X';
-        const CPU = 'O';
-        const WIN_CONDITIONS = [
-            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
-            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Cols
-            [0, 4, 8], [2, 4, 6]             // Diagonals
+        // --- DATA ---
+        const questionPool = [
+            {
+                question: "What does HTML stand for?",
+                options: ["Hyper Text Markup Language", "High Tech Modern Language", "Hyper Transfer Mode Link", "Home Tool Markup Language"],
+                correct: 0
+            },
+            {
+                question: "Which planet is known as the Red Planet?",
+                options: ["Venus", "Mars", "Jupiter", "Saturn"],
+                correct: 1
+            },
+            {
+                question: "What is the capital of France?",
+                options: ["Berlin", "Madrid", "Rome", "Paris"],
+                correct: 3
+            },
+            {
+                question: "Which JavaScript method removes the last element from an array?",
+                options: [".shift()", ".pop()", ".push()", ".splice()"],
+                correct: 1
+            },
+            {
+                question: "Who painted the Mona Lisa?",
+                options: ["Van Gogh", "Picasso", "Da Vinci", "Michelangelo"],
+                correct: 2
+            },
+            {
+                question: "What is the largest ocean on Earth?",
+                options: ["Atlantic", "Indian", "Arctic", "Pacific"],
+                correct: 3
+            },
+            {
+                question: "Which CSS property changes text color?",
+                options: ["font-color", "color", "text-style", "bg-color"],
+                correct: 1
+            },
+            {
+                question: "How many bits are in a byte?",
+                options: ["4", "8", "16", "32"],
+                correct: 1
+            },
+            {
+                question: "What is the chemical symbol for Gold?",
+                options: ["Au", "Ag", "Gd", "Fe"],
+                correct: 0
+            },
+            {
+                question: "Which company developed the Android OS?",
+                options: ["Apple", "Microsoft", "Google", "IBM"],
+                correct: 2
+            },
+            {
+                question: "What is 2 + 2 * 2?",
+                options: ["8", "6", "4", "10"],
+                correct: 1
+            },
+            {
+                question: "Which tag is used for the largest heading in HTML?",
+                options: ["<h6>", "<heading>", "<h1>", "<head>"],
+                correct: 2
+            }
         ];
 
-        // --- Initialization ---
-        function init() {
-            // Load Scores from LocalStorage
-            const savedScores = localStorage.getItem('cyberToeScores');
-            if (savedScores) {
-                scores = JSON.parse(savedScores);
-            }
-            updateScoreDisplay();
+        // --- STATE ---
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timerInterval;
+        let timeLeft = 10;
+        let isAnswered = false;
+        const TOTAL_QUESTIONS = 10;
 
-            const boardEl = document.getElementById('game-board');
-            boardEl.innerHTML = '';
-            board.forEach((cell, index) => {
-                const btn = document.createElement('button');
-                btn.className = `cell w-full h-full rounded-md border border-gray-700/50 flex items-center justify-center text-4xl font-bold relative overflow-hidden active:scale-95`;
-                btn.dataset.index = index;
-                btn.addEventListener('click', () => handleCellClick(index));
-                
-                // Inner glow container
-                const inner = document.createElement('div');
-                inner.className = 'w-full h-full flex items-center justify-center pointer-events-none';
-                btn.appendChild(inner);
-                
-                boardEl.appendChild(btn);
-            });
-            updateStatus("YOUR TURN");
-        }
+        // --- DOM ELEMENTS ---
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const nextBtn = document.getElementById('next-btn');
+        const timerEl = document.getElementById('timer');
+        const progressBar = document.getElementById('progress-bar');
+        const questionCounter = document.getElementById('question-counter');
+        const highScoreHome = document.getElementById('home-high-score');
 
-        function updateScoreDisplay() {
-            document.getElementById('score-p1').innerText = scores.p1;
-            document.getElementById('score-cpu').innerText = scores.cpu;
-        }
-
-        function saveScores() {
-            localStorage.setItem('cyberToeScores', JSON.stringify(scores));
-        }
-
-        function resetScores() {
-            if(confirm("Purge all score data?")) {
-                scores = { p1: 0, cpu: 0 };
-                saveScores();
-                updateScoreDisplay();
-                playSound('lose'); // Mechanical feedback
-            }
-        }
-
-        // --- Audio System ---
-        function initAudio() {
-            if (!audioCtx) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContext();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
-
+        // --- SOUNDS (Web Audio API) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
         function playSound(type) {
-            if (!soundEnabled) return;
-            initAudio();
-            
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
 
-            const now = audioCtx.currentTime;
-            
-            if (type === 'moveX') {
+            if (type === 'correct') {
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, now);
-                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                osc.start(now);
-                osc.stop(now + 0.1);
-            } else if (type === 'moveO') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(200, now);
-                osc.frequency.linearRampToValueAtTime(100, now + 0.15);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                osc.start(now);
-                osc.stop(now + 0.15);
-            } else if (type === 'win') {
-                [440, 554, 659].forEach((freq, i) => {
-                    const o = audioCtx.createOscillator();
-                    const g = audioCtx.createGain();
-                    o.type = 'triangle';
-                    o.frequency.value = freq;
-                    o.connect(g);
-                    g.connect(audioCtx.destination);
-                    g.gain.setValueAtTime(0.1, now + i*0.1);
-                    g.gain.exponentialRampToValueAtTime(0.001, now + i*0.1 + 0.6);
-                    o.start(now + i*0.1);
-                    o.stop(now + i*0.1 + 0.6);
-                });
-            } else if (type === 'lose') {
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, now);
-                osc.frequency.linearRampToValueAtTime(100, now + 0.3);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now);
-                osc.stop(now + 0.3);
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(150, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'click') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
             }
         }
 
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            const btn = document.getElementById('sound-btn');
-            if (soundEnabled) {
-                btn.innerHTML = '<span id="sound-icon">🔊</span> SOUND: ON';
-                btn.classList.add('text-red-400');
-            } else {
-                btn.innerHTML = '<span id="sound-icon">🔇</span> SOUND: OFF';
-                btn.classList.remove('text-red-400');
-            }
-            initAudio();
+        // --- LOGIC ---
+
+        function init() {
+            const savedScore = localStorage.getItem('quizHighScore') || 0;
+            highScoreHome.textContent = savedScore;
         }
 
-        // --- Game Logic ---
-        function handleCellClick(index) {
-            initAudio(); // Ensure audio context is ready on first click
-            if (board[index] !== '' || !gameActive || !isPlayerTurn) return;
+        window.startQuiz = function() {
+            playSound('click');
+            // Shuffle and pick 10 questions
+            currentQuestions = [...questionPool].sort(() => 0.5 - Math.random()).slice(0, TOTAL_QUESTIONS);
+            currentQuestionIndex = 0;
+            score = 0;
+            isAnswered = false;
+
+            startScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            quizScreen.classList.remove('hidden');
+            quizScreen.classList.add('fade-in');
+
+            loadQuestion();
+        };
+
+        function loadQuestion() {
+            clearInterval(timerInterval);
+            isAnswered = false;
+            timeLeft = 10;
+            timerEl.textContent = timeLeft;
+            timerEl.classList.remove('timer-warning');
             
-            makeMove(index, PLAYER);
+            // Reset UI
+            nextBtn.classList.add('opacity-0', 'pointer-events-none');
+            nextBtn.disabled = true;
+            nextBtn.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-500');
+            nextBtn.classList.add('bg-slate-700', 'text-slate-400');
+
+            const q = currentQuestions[currentQuestionIndex];
+            questionText.innerHTML = q.question;
+            questionCounter.innerHTML = `${currentQuestionIndex + 1}<span class="text-slate-500 text-sm font-normal">/${TOTAL_QUESTIONS}</span>`;
             
-            if (gameActive) {
-                isPlayerTurn = false;
-                updateStatus("CPU THINKING...");
-                setTimeout(cpuMove, 600);
-            }
-        }
+            // Update Progress
+            const progressPct = ((currentQuestionIndex) / TOTAL_QUESTIONS) * 100;
+            progressBar.style.width = `${progressPct}%`;
 
-        function makeMove(index, player) {
-            board[index] = player;
-            const cells = document.querySelectorAll('.cell div');
-            const cell = cells[index];
-            
-            cell.innerText = player;
-            if (player === PLAYER) {
-                cell.classList.add('text-red-500', 'neon-text-red');
-                playSound('moveX');
-            } else {
-                cell.classList.add('text-green-400', 'neon-text-green');
-                playSound('moveO');
-            }
-
-            if (window.NativeBridge && window.NativeBridge.vibrate) {
-                window.NativeBridge.vibrate(50);
-            } else if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-
-            checkResult();
-        }
-
-        function cpuMove() {
-            if (!gameActive) return;
-
-            let move = -1;
-            // 1. Attack
-            move = findBestMove(CPU);
-            // 2. Defense
-            if (move === -1) move = findBestMove(PLAYER);
-            // 3. Center
-            if (move === -1 && board[4] === '') move = 4;
-            // 4. Random
-            if (move === -1) {
-                const available = board.map((v, i) => v === '' ? i : null).filter(v => v !== null);
-                move = available[Math.floor(Math.random() * available.length)];
-            }
-
-            if (move !== -1) {
-                makeMove(move, CPU);
-                if (gameActive) {
-                    isPlayerTurn = true;
-                    updateStatus("YOUR TURN");
-                }
-            }
-        }
-
-        function findBestMove(targetPlayer) {
-            for (let condition of WIN_CONDITIONS) {
-                const [a, b, c] = condition;
-                const vals = [board[a], board[b], board[c]];
-                const countTarget = vals.filter(v => v === targetPlayer).length;
-                const countEmpty = vals.filter(v => v === '').length;
-
-                if (countTarget === 2 && countEmpty === 1) {
-                    if (board[a] === '') return a;
-                    if (board[b] === '') return b;
-                    if (board[c] === '') return c;
-                }
-            }
-            return -1;
-        }
-
-        function checkResult() {
-            let roundWon = false;
-            let winningLine = null;
-
-            for (let i = 0; i < WIN_CONDITIONS.length; i++) {
-                const [a, b, c] = WIN_CONDITIONS[i];
-                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-                    roundWon = true;
-                    winningLine = WIN_CONDITIONS[i];
-                    break;
-                }
-            }
-
-            if (roundWon) {
-                endGame(board[winningLine[0]], winningLine);
-                return;
-            }
-
-            if (!board.includes('')) {
-                endGame('DRAW');
-            }
-        }
-
-        function endGame(winner, line) {
-            gameActive = false;
-            updateStatus("GAME OVER");
-
-            if (winner === PLAYER) {
-                scores.p1++;
-                highlightWin(line, 'red');
-                setTimeout(() => showModal("VICTORY", "text-red-500"), 800);
-                playSound('win');
-            } else if (winner === CPU) {
-                scores.cpu++;
-                highlightWin(line, 'green');
-                setTimeout(() => showModal("DEFEAT", "text-green-400"), 800);
-                playSound('lose');
-            } else {
-                setTimeout(() => showModal("DRAW", "text-white"), 500);
-                playSound('lose');
-            }
-            
-            saveScores();
-            updateScoreDisplay();
-        }
-
-        function highlightWin(line, color) {
-            const cells = document.querySelectorAll('.cell');
-            line.forEach(index => {
-                cells[index].classList.add(color === 'red' ? 'shadow-[0_0_20px_#ef4444]' : 'shadow-[0_0_20px_#4ade80]');
-                cells[index].style.borderColor = color === 'red' ? '#ef4444' : '#4ade80';
+            // Render Options
+            optionsContainer.innerHTML = '';
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn w-full p-4 text-left rounded-xl bg-slate-800/50 border border-slate-700 hover:bg-slate-700/50 text-slate-200 transition-all";
+                btn.innerHTML = `<span class="inline-block w-6 h-6 rounded-full bg-slate-700 text-xs flex items-center justify-center mr-3 text-slate-400">${String.fromCharCode(65 + index)}</span> ${opt}`;
+                btn.onclick = () => checkAnswer(index, btn);
+                optionsContainer.appendChild(btn);
             });
+
+            // Start Timer
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                if (timeLeft <= 3) timerEl.classList.add('timer-warning');
+                
+                if (timeLeft === 0) {
+                    clearInterval(timerInterval);
+                    handleTimeUp();
+                }
+            }, 1000);
         }
 
-        function updateStatus(msg) {
-            document.getElementById('status-text').innerText = msg;
+        function checkAnswer(selectedIndex, btnElement) {
+            if (isAnswered) return;
+            isAnswered = true;
+            clearInterval(timerInterval);
+
+            const q = currentQuestions[currentQuestionIndex];
+            const isCorrect = selectedIndex === q.correct;
+            
+            // Visuals
+            const allBtns = optionsContainer.children;
+            
+            if (isCorrect) {
+                playSound('correct');
+                score++;
+                btnElement.classList.replace('border-slate-700', 'border-green-500');
+                btnElement.classList.replace('bg-slate-800/50', 'bg-green-500/20');
+                btnElement.querySelector('span').classList.replace('bg-slate-700', 'bg-green-500');
+                btnElement.querySelector('span').classList.replace('text-slate-400', 'text-white');
+            } else {
+                playSound('wrong');
+                if(window.navigator.vibrate) window.navigator.vibrate(200);
+                btnElement.classList.replace('border-slate-700', 'border-red-500');
+                btnElement.classList.replace('bg-slate-800/50', 'bg-red-500/20');
+                btnElement.querySelector('span').classList.replace('bg-slate-700', 'bg-red-500');
+                btnElement.querySelector('span').classList.replace('text-slate-400', 'text-white');
+
+                // Show correct one
+                const correctBtn = allBtns[q.correct];
+                correctBtn.classList.replace('border-slate-700', 'border-green-500');
+                correctBtn.classList.replace('bg-slate-800/50', 'bg-green-500/20');
+            }
+
+            // Disable all
+            Array.from(allBtns).forEach(b => b.classList.add('pointer-events-none'));
+
+            // Enable Next Button
+            showNextButton();
         }
 
-        function showModal(title, colorClass) {
-            const modal = document.getElementById('result-modal');
-            const text = document.getElementById('winner-text');
-            text.innerText = title;
-            text.className = `text-4xl font-bold mb-2 ${colorClass} neon-text-${colorClass.includes('red') ? 'red' : 'green'}`;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+        function handleTimeUp() {
+            if (isAnswered) return;
+            isAnswered = true;
+            playSound('wrong');
+            if(window.navigator.vibrate) window.navigator.vibrate(200);
+
+            const q = currentQuestions[currentQuestionIndex];
+            const allBtns = optionsContainer.children;
+            
+            // Highlight correct answer
+            const correctBtn = allBtns[q.correct];
+            correctBtn.classList.replace('border-slate-700', 'border-green-500');
+            correctBtn.classList.replace('bg-slate-800/50', 'bg-green-500/20');
+            
+            Array.from(allBtns).forEach(b => b.classList.add('pointer-events-none'));
+            showNextButton();
         }
 
-        function closeModal() {
-            document.getElementById('result-modal').classList.add('hidden');
-            document.getElementById('result-modal').classList.remove('flex');
-            resetGame();
+        function showNextButton() {
+            nextBtn.classList.remove('opacity-0', 'pointer-events-none');
+            nextBtn.disabled = false;
+            nextBtn.classList.replace('bg-slate-700', 'bg-blue-600');
+            nextBtn.classList.replace('text-slate-400', 'text-white');
+            nextBtn.classList.add('hover:bg-blue-500');
+            nextBtn.textContent = currentQuestionIndex === TOTAL_QUESTIONS - 1 ? "Finish Quiz" : "Next Question";
         }
 
-        function resetGame() {
-            board = ['', '', '', '', '', '', '', '', ''];
-            gameActive = true;
-            isPlayerTurn = true;
+        window.nextQuestion = function() {
+            playSound('click');
+            currentQuestionIndex++;
+            if (currentQuestionIndex < TOTAL_QUESTIONS) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        };
+
+        function showResults() {
+            quizScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            resultScreen.classList.add('fade-in');
+
+            // Calc
+            const percentage = (score / TOTAL_QUESTIONS) * 100;
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('accuracy-text').textContent = `${Math.round(percentage)}%`;
+            document.getElementById('result-title').textContent = percentage >= 70 ? "Awesome!" : "Completed";
+            document.getElementById('result-msg').textContent = percentage >= 70 ? "You're a quiz master!" : "Keep practicing!";
+
+            // High Score Logic
+            const currentHigh = localStorage.getItem('quizHighScore') || 0;
+            if (score > currentHigh) {
+                localStorage.setItem('quizHighScore', score);
+                document.getElementById('high-score-res').textContent = score + " (New!)";
+            } else {
+                document.getElementById('high-score-res').textContent = currentHigh;
+            }
+        }
+
+        window.restartQuiz = function() {
+            playSound('click');
             init();
-            document.getElementById('result-modal').classList.add('hidden');
-            document.getElementById('result-modal').classList.remove('flex');
-        }
+            resultScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            startScreen.classList.add('fade-in');
+        };
 
-        // Start
-        window.onload = init;
+        // Init on load
+        init();
+
     </script>
 </body>
 </html>
